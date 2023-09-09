@@ -15,12 +15,12 @@ enum Token {
     Colon,
     Semicolon,
     Let,
-    RParen,
     LParen,
-    RBracket,
+    RParen,
     LBracket,
-    RBrace,
+    RBracket,
     LBrace,
+    RBrace,
     Ident(String),
     Fn,
     If,
@@ -129,42 +129,42 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
             }),
             '(' => {
                 tokens.push(TokenWithLoc {
-                    token: Token::RParen,
+                    token: Token::LParen,
                     start: current_start,
                     end: current_end,
                 });
             }
             ')' => {
                 tokens.push(TokenWithLoc {
-                    token: Token::LParen,
+                    token: Token::RParen,
                     start: current_start,
                     end: current_end,
                 });
             }
             '[' => {
                 tokens.push(TokenWithLoc {
-                    token: Token::RBracket,
+                    token: Token::LBracket,
                     start: current_start,
                     end: current_end,
                 });
             }
             ']' => {
                 tokens.push(TokenWithLoc {
-                    token: Token::LBracket,
+                    token: Token::RBracket,
                     start: current_start,
                     end: current_end,
                 });
             }
             '{' => {
                 tokens.push(TokenWithLoc {
-                    token: Token::RBrace,
+                    token: Token::LBrace,
                     start: current_start,
                     end: current_end,
                 });
             }
             '}' => {
                 tokens.push(TokenWithLoc {
-                    token: Token::LBrace,
+                    token: Token::RBrace,
                     start: current_start,
                     end: current_end,
                 });
@@ -237,17 +237,12 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
             }
             // Identifiers or keywords
             _ => {
-                if c.is_alphabetic() || c == '_' {
+                if is_valid_identifier_char(c) {
                     // TODO: Same as parsing the string
                     let mut string_literal = String::from(c);
-                    // ??????????????
-                    current_start = idx; // Update start position to include the first character
+                    current_start -= 1; // Update start position to include the first character
                     while let Some(&(_, next)) = chars.peek() {
-                        current_end += 1;
-                        chars.next();
-                        if next == ' ' {
-                            // NOTE: Still not checking if there's in an invalid char
-                            // in the keyword or identifier
+                        if next == ' ' || !is_valid_identifier_char(next) {
                             match token_keyword_literal_to_enum(&string_literal) {
                                 Some(token) => {
                                     tokens.push(TokenWithLoc {
@@ -268,6 +263,8 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
                         } else {
                             string_literal.push(next)
                         }
+                        current_end += 1;
+                        chars.next();
                     }
                 } else {
                     return Err("Invalid character in input");
@@ -292,13 +289,19 @@ fn token_keyword_literal_to_enum(token_literal: &str) -> Option<Token> {
     }
 }
 
+fn is_valid_identifier_char(ch: char) -> bool {
+    ch == '_' || ch.is_alphabetic()
+}
+
 fn main() {
     let input = "
-let x = 3 * 2;
-fn add_two(number: int) {
+print(\"Hello world\");
+print(\"\");
+let x = 5* 3;
+fn add_two(number: int) int {
     return number + 2;
 }
-print(x);
+print(add_two(x));
 ";
     match lex(input) {
         Ok(tokens) => {
