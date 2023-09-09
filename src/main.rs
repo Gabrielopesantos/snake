@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, PartialEq)]
 enum Token {
     String(String),
@@ -13,6 +15,19 @@ enum Token {
     NotEq,
     Semi,
     Let,
+    LParen,
+    RParen,
+    LBracket,
+    RBracket,
+    LBrace,
+    RBrace,
+    Ident(String),
+    Fn,
+    If,
+    Else,
+    True,
+    False,
+    Return,
 }
 
 #[derive(Debug, PartialEq)]
@@ -168,8 +183,43 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
                 // Update start position to the next character
                 current_start = idx + 1;
             }
+            // Identifiers or keywords
             _ => {
-                return Err("Invalid character in input");
+                if c.is_alphabetic() || c == '_' {
+                    // TODO: Same as parsing the string
+                    let mut string_literal = String::from(c);
+                    // ??????????????
+                    current_start = idx; // Update start position to include the first character
+                    while let Some(&(_, next)) = chars.peek() {
+                        current_end += 1;
+                        chars.next();
+                        if next == ' ' {
+                            // NOTE: Still not checking if there's in an invalid char
+                            // in the keyword or identifier
+                            match token_keyword_literal_to_enum(&string_literal) {
+                                Some(token) => {
+                                    tokens.push(TokenWithLoc {
+                                        token,
+                                        start: current_start,
+                                        end: current_end,
+                                    });
+                                }
+                                None => {
+                                    tokens.push(TokenWithLoc {
+                                        token: Token::Ident(string_literal),
+                                        start: current_start,
+                                        end: current_end,
+                                    });
+                                }
+                            }
+                            break;
+                        } else {
+                            string_literal.push(next)
+                        }
+                    }
+                } else {
+                    return Err("Invalid character in input");
+                }
             }
         }
     }
@@ -177,8 +227,21 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
     Ok(tokens)
 }
 
+fn token_keyword_literal_to_enum(token_literal: &str) -> Option<Token> {
+    match token_literal {
+        "let" => Some(Token::Let),
+        "fn" => Some(Token::Fn),
+        "if" => Some(Token::If),
+        "else" => Some(Token::Else),
+        "true" => Some(Token::True),
+        "false" => Some(Token::False),
+        "return" => Some(Token::Return),
+        _ => None,
+    }
+}
+
 fn main() {
-    let input = "9 + 4 * 2 - 8 / 2 \"Hello, Rust!\" 3.14 == 15 3 = 5 ! != 312 31231";
+    let input = "9 + 4 * 2 - 8 / 2 \"Hello, Rust!\" 3.14 == 15 3 = 5 ! != 312 31231 let x = 5;";
     match lex(input) {
         Ok(tokens) => {
             for token in &tokens {
