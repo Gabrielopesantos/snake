@@ -1,12 +1,18 @@
 #[derive(Debug, PartialEq)]
 enum Token {
+    String(String),
     Integer(i32),
     Float(f64),
+    Assign,
     Plus,
     Minus,
     Multiply,
     Divide,
-    String(String),
+    Bang,
+    Eq,
+    NotEq,
+    Semi,
+    Let,
 }
 
 #[derive(Debug, PartialEq)]
@@ -22,17 +28,17 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
     let mut current_start = 0;
 
     while let Some((idx, c)) = chars.next() {
-        let mut current_end = idx;
+        let mut current_end = idx + 1;
 
         match c {
             '0'..='9' => {
                 let mut value = String::from(c);
                 let mut is_float = false;
-                while let Some(&(next_idx, next)) = chars.peek() {
+                while let Some(&(_, next)) = chars.peek() {
                     match next {
                         '0'..='9' | '.' => {
                             value.push(next);
-                            current_end = next_idx;
+                            current_end += 1;
                             chars.next();
                             if next == '.' {
                                 // Check if `is_float` has been set before, if so,
@@ -91,13 +97,57 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
                     end: current_end,
                 });
             }
+            '=' => {
+                if let Some(&(_, next)) = chars.peek() {
+                    if next == '=' {
+                        current_end += 1;
+                        tokens.push(TokenWithLoc {
+                            token: Token::Eq,
+                            start: current_start,
+                            end: current_end,
+                        });
+                        chars.next();
+                    } else {
+                        tokens.push(TokenWithLoc {
+                            token: Token::Assign,
+                            start: current_start,
+                            end: current_end,
+                        })
+                    }
+                } else {
+                    return Err("Invalid character in input");
+                }
+            }
+            '!' => {
+                if let Some(&(_, next)) = chars.peek() {
+                    if next == '=' {
+                        current_end += 1;
+                        tokens.push(TokenWithLoc {
+                            token: Token::NotEq,
+                            start: current_start,
+                            end: current_end,
+                        });
+                        chars.next();
+                    } else {
+                        tokens.push(TokenWithLoc {
+                            token: Token::Bang,
+                            start: current_start,
+                            end: current_end,
+                        })
+                    }
+                } else {
+                    return Err("Invalid character in input");
+                }
+            }
             '"' => {
                 let mut string_literal = String::new();
                 current_start = idx; // Update start position to include the opening double quote
-                while let Some(&(next_idx, next)) = chars.peek() {
+                while let Some(&(_, next)) = chars.peek() {
+                    // Update end position to include the closing double quote
+                    current_end += 1;
+                    // Consume whatever char comes next, string char or closing double quote
+                    chars.next();
                     if next == '"' {
-                        current_end = next_idx; // Update end position to include the closing double quote
-                        chars.next(); // Consume the closing double quote
                         tokens.push(TokenWithLoc {
                             token: Token::String(string_literal),
                             start: current_start,
@@ -105,12 +155,15 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
                         });
                         break;
                     } else {
-                        string_literal.push(next);
-                        current_end = next_idx;
-                        chars.next();
+                        string_literal.push(next)
                     }
                 }
             }
+            ';' => tokens.push(TokenWithLoc {
+                token: Token::Semi,
+                start: current_start,
+                end: current_end,
+            }),
             ' ' => {
                 // Update start position to the next character
                 current_start = idx + 1;
@@ -125,7 +178,7 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
 }
 
 fn main() {
-    let input = "9 + 4 * 2 - 8 / 2 \"Hello, Rust!\" 3.14";
+    let input = "9 + 4 * 2 - 8 / 2 \"Hello, Rust!\" 3.14 == 15 3 = 5 ! != 312 31231";
     match lex(input) {
         Ok(tokens) => {
             for token in &tokens {
@@ -140,4 +193,3 @@ fn main() {
         }
     }
 }
-
