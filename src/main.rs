@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(Debug, PartialEq)]
 enum Token {
     String(String),
@@ -13,14 +11,16 @@ enum Token {
     Bang,
     Eq,
     NotEq,
-    Semi,
+    Comma,
+    Colon,
+    Semicolon,
     Let,
-    LParen,
     RParen,
-    LBracket,
+    LParen,
     RBracket,
-    LBrace,
+    LBracket,
     RBrace,
+    LBrace,
     Ident(String),
     Fn,
     If,
@@ -112,6 +112,63 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
                     end: current_end,
                 });
             }
+            ',' => tokens.push(TokenWithLoc {
+                token: Token::Comma,
+                start: current_start,
+                end: current_end,
+            }),
+            ':' => tokens.push(TokenWithLoc {
+                token: Token::Colon,
+                start: current_start,
+                end: current_end,
+            }),
+            ';' => tokens.push(TokenWithLoc {
+                token: Token::Semicolon,
+                start: current_start,
+                end: current_end,
+            }),
+            '(' => {
+                tokens.push(TokenWithLoc {
+                    token: Token::RParen,
+                    start: current_start,
+                    end: current_end,
+                });
+            }
+            ')' => {
+                tokens.push(TokenWithLoc {
+                    token: Token::LParen,
+                    start: current_start,
+                    end: current_end,
+                });
+            }
+            '[' => {
+                tokens.push(TokenWithLoc {
+                    token: Token::RBracket,
+                    start: current_start,
+                    end: current_end,
+                });
+            }
+            ']' => {
+                tokens.push(TokenWithLoc {
+                    token: Token::LBracket,
+                    start: current_start,
+                    end: current_end,
+                });
+            }
+            '{' => {
+                tokens.push(TokenWithLoc {
+                    token: Token::RBrace,
+                    start: current_start,
+                    end: current_end,
+                });
+            }
+            '}' => {
+                tokens.push(TokenWithLoc {
+                    token: Token::LBrace,
+                    start: current_start,
+                    end: current_end,
+                });
+            }
             '=' => {
                 if let Some(&(_, next)) = chars.peek() {
                     if next == '=' {
@@ -174,12 +231,7 @@ fn lex(input: &str) -> Result<Vec<TokenWithLoc>, &'static str> {
                     }
                 }
             }
-            ';' => tokens.push(TokenWithLoc {
-                token: Token::Semi,
-                start: current_start,
-                end: current_end,
-            }),
-            ' ' => {
+            ' ' | '\t' | '\n' | '\r' => {
                 // Update start position to the next character
                 current_start = idx + 1;
             }
@@ -241,7 +293,13 @@ fn token_keyword_literal_to_enum(token_literal: &str) -> Option<Token> {
 }
 
 fn main() {
-    let input = "9 + 4 * 2 - 8 / 2 \"Hello, Rust!\" 3.14 == 15 3 = 5 ! != 312 31231 let x = 5;";
+    let input = "
+let x = 3 * 2;
+fn add_two(number: int) {
+    return number + 2;
+}
+print(x);
+";
     match lex(input) {
         Ok(tokens) => {
             for token in &tokens {
