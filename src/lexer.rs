@@ -1,3 +1,8 @@
+#![allow(dead_code)]
+
+use core::iter::Peekable;
+use std::str::CharIndices;
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
     String(String),
@@ -30,6 +35,44 @@ pub enum Token {
     True,
     False,
     Return,
+    EOF,
+}
+
+struct Lexer<'a> {
+    input: String,
+    input_chars: Peekable<CharIndices<'a>>,
+
+    pos: u32,
+    read_pos: u32,
+    ch: char,
+
+    tokens: Vec<Token>,
+}
+
+impl<'a> Lexer<'_> {
+    fn new(input: String) -> Self {
+        let input_chars = input.to_owned().char_indices().peekable();
+        let l = Lexer {
+            input: input.to_owned(),
+            input_chars,
+
+            pos: 0,
+            ch: '0',
+            read_pos: 0,
+
+            tokens: Vec::new(),
+        };
+        l.read_char();
+
+        return l;
+    }
+
+    // TODO: Set a proper error later;
+    fn lex(&self) -> Result<(), &'static str> {
+        return Ok(());
+    }
+
+    fn read_char(&self) {}
 }
 
 pub fn lex(input: &str) -> Result<Vec<Token>, &'static str> {
