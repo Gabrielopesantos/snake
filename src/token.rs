@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+#[derive(Debug, PartialEq)]
 pub enum Token {
     // Special
     Illegal,
@@ -9,7 +10,7 @@ pub enum Token {
     Ident(String),
     String(String),
     Float(f64),
-    Int(i64),
+    Integer(i64),
 
     // Operators
     Assign,
@@ -46,7 +47,40 @@ pub enum Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        match self {
+            Token::Assign => write!(f, "="),
+            Token::Bang => write!(f, "!"),
+            Token::Plus => write!(f, "+"),
+            Token::Minus => write!(f, "-"),
+            Token::Asterisk => write!(f, "*"),
+            Token::Slash => write!(f, "/"),
+            Token::Lt => write!(f, "<"),
+            Token::Gt => write!(f, ">"),
+            Token::Eq => write!(f, "=="),
+            Token::NotEq => write!(f, "!="),
+            Token::Comma => write!(f, ","),
+            Token::Semicolon => write!(f, ";"),
+            Token::Colon => write!(f, ":"),
+            Token::LParen => write!(f, "("),
+            Token::RParen => write!(f, ")"),
+            Token::LBrace => write!(f, "{{"),
+            Token::RBrace => write!(f, "}}"),
+            Token::LBracket => write!(f, "["),
+            Token::RBracket => write!(f, "]"),
+            Token::Fn => write!(f, "fn"),
+            Token::Let => write!(f, "let"),
+            Token::True => write!(f, "true"),
+            Token::False => write!(f, "false"),
+            Token::If => write!(f, "if"),
+            Token::Else => write!(f, "else"),
+            Token::Return => write!(f, "return"),
+            Token::EOF => write!(f, "\0"),
+            Token::Illegal => write!(f, "ILLEGAL"),
+            Token::Float(value) => write!(f, "{}", value),
+            // NOTE: ?
+            Token::Integer(value) => write!(f, "{}", value),
+            Token::String(value) | Token::Ident(value) => write!(f, "{}", value),
+        }
     }
 }
 
@@ -77,7 +111,7 @@ impl From<char> for Token {
 }
 
 impl From<String> for Token {
-    fn from(value: String) -> Self {
+    fn from(mut value: String) -> Self {
         match value.as_str() {
             "==" => Token::Eq,
             "!=" => Token::NotEq,
@@ -91,23 +125,25 @@ impl From<String> for Token {
             // Here, we have identifiers, strings, and numbers ints and floats.
             // If the incoming `value` starts with a number, it cannot be an identifier.
             // If value, starts with `"`, it has to be a string.
-            //
-            // FIXME
+            // Otherwise, its a number. If the number literal contains a `.` its a float, otherwise an int
             _ => {
                 if value.starts_with('"') {
+                    value.remove(0);
                     Token::String(value)
                 } else if !value.starts_with(char::is_numeric) {
                     Token::Ident(value)
                 } else {
                     if value.contains('.') {
-                        // FIXME
-                        Token::Float(3.14)
+                        // FIXME: unwrap
+                        let parsed_value = value.parse::<f64>().unwrap();
+                        Token::Float(parsed_value)
                     } else {
-                        // FIXME
-                        Token::Int(3)
+                        // FIXME: unwrap
+                        let parsed_value = value.parse::<i64>().unwrap();
+                        Token::Integer(parsed_value)
                     }
                 }
-            },
+            }
         }
     }
 }

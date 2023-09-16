@@ -9,7 +9,7 @@ Interpreteded programing language;
 ### Variable assignment
 
 ```
-x = 3;
+let x = 3;
 ```
 
 ### Function declaration
