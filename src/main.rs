@@ -3,5 +3,6 @@
 
 mod lexer;
 mod token;
+mod errors;
 
 fn main() {}

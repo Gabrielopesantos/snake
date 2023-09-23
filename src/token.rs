@@ -1,4 +1,6 @@
+use std::convert::{From, TryFrom};
 use std::fmt::Display;
+use crate::errors::TokenParseError;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -110,18 +112,21 @@ impl From<char> for Token {
     }
 }
 
-impl From<String> for Token {
-    fn from(mut value: String) -> Self {
+
+impl TryFrom<String> for Token {
+    type Error = TokenParseError;
+
+    fn try_from(mut value: String) -> Result<Self, Self::Error> {
         match value.as_str() {
-            "==" => Token::Eq,
-            "!=" => Token::NotEq,
-            "fn" => Token::Fn,
-            "let" => Token::Let,
-            "true" => Token::True,
-            "false" => Token::False,
-            "if" => Token::If,
-            "else" => Token::Else,
-            "return" => Token::Return,
+            "==" => Ok(Token::Eq),
+            "!=" => Ok(Token::NotEq),
+            "fn" => Ok(Token::Fn),
+            "let" => Ok(Token::Let),
+            "true" => Ok(Token::True),
+            "false" => Ok(Token::False),
+            "if" => Ok(Token::If),
+            "else" => Ok(Token::Else),
+            "return" => Ok(Token::Return),
             // Here, we have identifiers, strings, and numbers ints and floats.
             // If the incoming `value` starts with a number, it cannot be an identifier.
             // If value, starts with `"`, it has to be a string.
@@ -129,21 +134,20 @@ impl From<String> for Token {
             _ => {
                 if value.starts_with('"') {
                     value.remove(0);
-                    Token::String(value)
+                    Ok(Token::String(value))
                 } else if !value.starts_with(char::is_numeric) {
-                    Token::Ident(value)
+                    Ok(Token::Ident(value))
                 } else {
                     if value.contains('.') {
-                        // FIXME: unwrap
-                        let parsed_value = value.parse::<f64>().unwrap();
-                        Token::Float(parsed_value)
+                        let parsed_value = value.parse::<f64>()?;
+                        Ok(Token::Float(parsed_value))
                     } else {
-                        // FIXME: unwrap
-                        let parsed_value = value.parse::<i64>().unwrap();
-                        Token::Integer(parsed_value)
+                        let parsed_value = value.parse::<i64>()?;
+                        Ok(Token::Integer(parsed_value))
                     }
                 }
             }
         }
     }
 }
+

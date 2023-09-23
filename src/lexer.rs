@@ -1,5 +1,6 @@
 use crate::token::Token;
 use std::{iter::Peekable, str::CharIndices};
+use crate::errors::{LexerError, TokenParseError};
 
 struct Lexer<'a> {
     input_chars: Peekable<CharIndices<'a>>,
@@ -18,11 +19,11 @@ impl<'a> Lexer<'a> {
 }
 
 impl Lexer<'_> {
-    // FIXME: Have a better error
-    fn lex(&mut self) -> Result<Vec<Token>, &'static str> {
+    // type Error = LexerError; // NOTE: Inherent associated type?
+    fn lex(&mut self) -> Result<Vec<Token>, LexerError> {
         let mut tokens = Vec::new();
         // FIXME: Irrefutable `while let` pattern
-        while let token = self.next_token() {
+        while let Ok(token) = self.next_token()? {
             if token == Token::EOF {
                 break;
             }
@@ -31,13 +32,12 @@ impl Lexer<'_> {
         return Ok(tokens);
     }
 
-    // FIXME: Should return a Result
-    fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> Result<Token, TokenParseError> {
         self.skip_whitespace();
 
         let token = match self.ch {
-            '0'..='9' => Token::from(self.read_number()),
-            'a'..='z' | 'A'..='Z' | '_' => Token::from(self.read_identifier()),
+            '0'..='9' => Token::try_from(self.read_number())?,
+            'a'..='z' | 'A'..='Z' | '_' => Token::try_from(self.read_identifier())?,
             '!' | '=' => {
                 if self.peek_char() != '=' {
                     Token::from(self.ch)
@@ -45,15 +45,15 @@ impl Lexer<'_> {
                     let ch = self.ch;
                     // FIXME: What if this char is '\0'?
                     self.read_char();
-                    Token::from(format!("{ch}{}", self.ch))
+                    Token::try_from(format!("{ch}{}", self.ch))?
                 }
             }
-            '"' => Token::from(self.read_string()),
+            '"' => Token::try_from(self.read_string())?,
             _ => Token::from(self.ch),
         };
 
         self.read_char();
-        return token;
+        return Ok(token);
     }
 
     fn read_char(&mut self) {
@@ -82,7 +82,7 @@ impl Lexer<'_> {
     }
 
     // FIXME: Rethink this function
-    // Given where this function is called, expect the recursive call, there's no way for the first
+    // Given where this function is called, except the recursive call, there's no way for the first
     // char to be a `.`.
     fn read_number(&mut self) -> String {
         let mut number = String::from(self.ch);
@@ -242,4 +242,3 @@ if (5 < 10) {
         }
     }
 }
-
