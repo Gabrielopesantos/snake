@@ -1,6 +1,6 @@
+use crate::errors::{LexerError, TokenParseError};
 use crate::token::Token;
 use std::{iter::Peekable, str::CharIndices};
-use crate::errors::{LexerError, TokenParseError};
 
 struct Lexer<'a> {
     input_chars: Peekable<CharIndices<'a>>,
@@ -14,7 +14,7 @@ impl<'a> Lexer<'a> {
             ch: '\0',
         };
         lexer.read_char();
-        return lexer;
+        lexer
     }
 }
 
@@ -22,14 +22,19 @@ impl Lexer<'_> {
     // type Error = LexerError; // NOTE: Inherent associated type?
     fn lex(&mut self) -> Result<Vec<Token>, LexerError> {
         let mut tokens = Vec::new();
-        // FIXME: Irrefutable `while let` pattern
-        while let Ok(token) = self.next_token()? {
-            if token == Token::EOF {
-                break;
+        loop {
+            match self.next_token() {
+                Ok(token) => {
+                    if token == Token::EOF {
+                        break;
+                    }
+                    tokens.push(token);
+                }
+                Err(error) => return Err(LexerError::from(error)),
             }
-            tokens.push(token);
         }
-        return Ok(tokens);
+
+        Ok(tokens)
     }
 
     fn next_token(&mut self) -> Result<Token, TokenParseError> {
@@ -53,7 +58,7 @@ impl Lexer<'_> {
         };
 
         self.read_char();
-        return Ok(token);
+        Ok(token)
     }
 
     fn read_char(&mut self) {
@@ -78,7 +83,7 @@ impl Lexer<'_> {
             string.push(self.ch);
             self.read_char();
         }
-        return string;
+        string
     }
 
     // FIXME: Rethink this function
@@ -90,7 +95,7 @@ impl Lexer<'_> {
             self.read_char();
             number.push(self.ch);
         }
-        return number;
+        number
     }
 
     // FIXME: Rethink this function
@@ -100,7 +105,7 @@ impl Lexer<'_> {
             self.read_char();
             identifier.push(self.ch);
         }
-        return identifier;
+        identifier
     }
 
     fn skip_whitespace(&mut self) {
@@ -112,6 +117,7 @@ impl Lexer<'_> {
 
 #[cfg(test)]
 mod tests {
+
     use super::{Lexer, Token};
 
     #[test]
@@ -233,12 +239,21 @@ if (5 < 10) {
         let mut lexer = Lexer::new(input);
 
         for (i, expected_token) in expected_tokens.into_iter().enumerate() {
-            let actual_token = lexer.next_token();
+            let actual_token = lexer.next_token().unwrap(); // Unwrapping here
             assert_eq!(
                 expected_token, actual_token,
                 "Test {}: tokens did not match, expected: {}. Got: {}",
                 i, expected_token, actual_token
             )
         }
+    }
+
+    #[test]
+    fn test_error_returned() {
+        let input = "3.563.123";
+        let mut lexer = Lexer::new(input);
+
+        let result = lexer.lex();
+        assert!(result.is_err());
     }
 }

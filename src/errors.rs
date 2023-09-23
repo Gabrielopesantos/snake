@@ -2,7 +2,7 @@ use std::num::{ParseFloatError, ParseIntError};
 
 #[derive(Debug)]
 pub enum LexerError {
-    TokenParseError(TokenParseError)
+    TokenParseError(TokenParseError),
 }
 
 impl From<TokenParseError> for LexerError {
@@ -17,8 +17,20 @@ pub enum TokenParseError {
     ParseError(ParseError),
 }
 
+impl From<ParseFloatError> for TokenParseError {
+    fn from(error: ParseFloatError) -> Self {
+        TokenParseError::ParseError(ParseError::from(error))
+    }
+}
+
+impl From<ParseIntError> for TokenParseError {
+    fn from(error: ParseIntError) -> Self {
+        TokenParseError::ParseError(ParseError::from(error))
+    }
+}
+
 #[derive(Debug)]
-enum ParseError {
+pub enum ParseError {
     IntError(ParseIntError),
     FloatError(ParseFloatError),
 }

@@ -1,6 +1,6 @@
+use crate::errors::TokenParseError;
 use std::convert::{From, TryFrom};
 use std::fmt::Display;
-use crate::errors::TokenParseError;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
@@ -112,7 +112,6 @@ impl From<char> for Token {
     }
 }
 
-
 impl TryFrom<String> for Token {
     type Error = TokenParseError;
 
@@ -150,4 +149,3 @@ impl TryFrom<String> for Token {
         }
     }
 }
-
